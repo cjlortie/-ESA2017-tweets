@@ -1,0 +1,95 @@
+---
+title:
+author: "cjlortie"
+date: "2017"
+output:
+  html_document:
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+---
+<br>
+
+###The Ecological Society of America Tweets
+
+![](./twitter.jpg)  
+
+<br>  
+
+A brief scrape and language analysis of twitter activity using the tag #ESA2017
+
+###Scrape #ESA2017 tweets
+```{r, tweets, warning=FALSE, message=FALSE}
+#library needs for basic wrangle
+library(tidyverse)
+#library(plyr)
+#library(twitteR)
+
+#connect to your twitter account for searches
+#source("twitter.R") #script listing your private connection details
+#scrape
+#ESA2017<-(searchTwitter("#ESA2017", n=20000))
+#20000 tweets were requested but the API can only return 16968
+#tweets <- strip_retweets(ESA2017, strip_manual = TRUE, strip_mt = TRUE)
+
+#text extraction
+#tweets = laply(tweets, function(t) t$getText())
+#tweets <- do.call("rbind", lapply(tweets, as.data.frame))
+
+#write out to share it
+#write_csv(tweets, "data/ESA2017tweets.csv")
+
+```
+
+###ESA2017 language EDA
+```{r, EDA, warning=FALSE, message=FALSE}
+#additional library needs
+library(wordcloud)
+library(tm)
+library(stringi)
+library(stringr)
+
+#read in csv data and skip rescrape
+tweets <- read_csv("data/ESA2017tweets.csv")
+df <- as.data.frame(tweets)
+df %>%
+  .$text %>% paste(collapse = "") %>%
+  gsub("(@|\\#)\\w+", "", .) %>%  ## remove mentions/hashtags
+  gsub("https?\\:\\/\\/\\w+\\.\\w+(\\/\\w+)*", "", .) %>% ## remove urls
+  gsub("\\bthe\\b", "", .) %>% ## remove the
+  gsub("amp", "", .) %>%  ## remove &
+  gsub("\\bspp\\b", "species", .) %>% ## replace spp by species
+  iconv(., from = "latin1", to = "UTF-8", sub = "") ## remove emojis 
+
+#write.table(just.the.tweets, "tweets.csv")
+wc<-stri_count_words(df, locale = NULL) #count total number of words
+wc #total word count in just the tweets
+
+#create a corpus for tm
+corpus <- Corpus(VectorSource(df))
+
+#clean but do not need because using df with just tweets
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+wordcloud(corpus, max.words = 100, random.order = FALSE, scale = c(3, .7))
+
+#create a term document matrix for tm
+tdm <- TermDocumentMatrix(corpus)
+
+#count
+esa.count<- as.data.frame(inspect(tdm))
+esa.count$word = rownames(esa.count)
+colnames(esa.count) <- c("count","word")
+esa.count<-esa.count[order(esa.count$count, decreasing=TRUE), ]
+as_data_frame(esa.count)
+#write.csv(esa.count,file="ESA2017wordcount.csv")
+
+
+```
+
