@@ -1,2 +1,2 @@
-# -ESA2017-tweets
-A quick scrape, write, and exploration of ESA2017 meeting tweets
+#ESA2017-tweets
+A quick scrape, write, and wordcloud for ESA2017 meeting tweets.
